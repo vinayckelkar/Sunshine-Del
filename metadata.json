@@ -1,0 +1,13 @@
+{
+  "name": "Remix: Sunshyne Business Suite",
+  "description": "Comprehensive ERP and Project Management system for Sunshyne Grafix LLP, featuring Inventory, Sales, Job Tracking, and Staff Attendance.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "Firebase",
+    "Real-time Updates",
+    "Admin Dashboard"
+  ]
+}

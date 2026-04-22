@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Stock item for printing and signage",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Vinyl", "Canvas", "Wallpapers", "Signage", "Frames", "Inks"] },
+        "stockLevel": { "type": "number" },
+        "unit": { "type": "string", "enum": ["sq ft", "pcs", "rolls", "liters"] },
+        "lowStockThreshold": { "type": "number" },
+        "pricePerUnit": { "type": "number" }
+      },
+      "required": ["name", "category", "stockLevel", "unit"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Project or service job",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "clientName": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "In Progress", "Completed", "Cancelled"] },
+        "paymentStatus": { "type": "string", "enum": ["Pending", "Received"] },
+        "assignedStaff": { "type": "array" },
+        "materialUsed": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "deadline": { "type": "string" },
+        "beforePhotos": { "type": "array" },
+        "afterPhotos": { "type": "array" }
+      },
+      "required": ["title", "clientName", "status"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Customer information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "gstin": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "Supplier information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "gstin": { "type": "string" },
+        "address": { "type": "string" },
+        "category": { "type": "string" },
+        "paymentTerms": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial record (Sales, Purchase, Payment, etc.)",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Sales Invoice", "Proforma Invoice", "Sales Return", "Purchase Bill", "Purchase Return", "Payment Received", "Payment Paid", "Expense"] },
+        "number": { "type": "string" },
+        "date": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientGSTIN": { "type": "string" },
+        "billingAddress": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "cgst": { "type": "number" },
+        "sgst": { "type": "number" },
+        "igst": { "type": "number" },
+        "totalGst": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "roundOff": { "type": "number" },
+        "status": { "type": "string" },
+        "paymentMode": { "type": "string" },
+        "referenceId": { "type": "string" },
+        "relatedInvoiceId": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["type", "number", "date", "totalAmount"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Inventory items"
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Active and past jobs"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Customer database"
+    },
+    "/vendors/{vendorId}": {
+      "schema": "Vendor",
+      "description": "Supplier database"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "All financial transactions"
+    }
+  },
+  "admins": ["vinayckelkar@gmail.com", "write@sunshynegrafix.com"]
+}

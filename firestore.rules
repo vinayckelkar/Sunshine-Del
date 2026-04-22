@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    
+    // Master Gate: Dynamic Role Check
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'vinayckelkar@gmail.com' || 
+        request.auth.token.email == 'write@sunshynegrafix.com' ||
+        getRole() == 'admin'
+      ); 
+    }
+
+    function isStaff() {
+      return isSignedIn() && (isAdmin() || getRole() == 'staff');
+    }
+
+    function isAccountant() {
+      return isSignedIn() && (isAdmin() || getRole() == 'accountant');
+    }
+
+    function isValidId(id) { return id is string && id.size() <= 128; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Validation Blueprints ---
+    
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'category', 'stockLevel', 'unit']) && 
+             data.name is string && data.name.size() > 0 &&
+             data.category is string &&
+             data.stockLevel is number &&
+             data.unit is string &&
+             (data.createdAt is timestamp || !data.keys().contains('createdAt')) &&
+             (data.updatedAt is timestamp || !data.keys().contains('updatedAt'));
+    }
+
+    function isValidJob(data) {
+      return data.keys().hasAll(['title', 'clientName', 'status']) &&
+             data.title is string && 
+             data.clientName is string && 
+             data.status in ['Pending', 'In Progress', 'Completed', 'Cancelled'] &&
+             (data.materialUsed is list || !data.keys().contains('materialUsed'));
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['type', 'number', 'date', 'totalAmount', 'status']) &&
+             data.type in ['Tax Invoice', 'Sales Invoice', 'Proforma Invoice', 'Sales Return', 'Purchase Bill', 'Purchase Return', 'Payment Received', 'Payment Paid', 'Expense', 'Vendor Payment'] &&
+             data.number is string && 
+             data.date is string && 
+             data.totalAmount is number && 
+             data.status is string &&
+             (data.items is list || !data.keys().contains('items'));
+    }
+
+    // --- Collections ---
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidProduct(incoming()) && isValidId(productId);
+      allow update: if isAdmin() && isValidProduct(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /inventoryMovements/{movementId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(movementId);
+      allow update, delete: if isAdmin();
+    }
+    
+    match /clients/{clientId} {
+      allow read: if isSignedIn();
+      allow create, update: if isVerified() && isValidId(clientId);
+      allow delete: if isAdmin();
+    }
+    
+    match /vendors/{vendorId} {
+      allow read: if isSignedIn();
+      allow create, update: if isVerified() && isValidId(vendorId);
+      allow delete: if isAdmin();
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isSignedIn();
+      allow create: if isVerified() && isValidJob(incoming()) && isValidId(jobId);
+      allow update: if isVerified() && isValidJob(incoming()) && (
+        isAdmin() || 
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'progress', 'afterPhotos', 'beforePhotos', 'deadline', 'materialUsed'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (isAdmin() || incoming().type == 'Expense') && isValidTransaction(incoming()) && isValidId(transactionId);
+      allow update, delete: if isAdmin();
+    }
+    
+    // Legacy support for direct sales collection if still used anywhere
+    match /sales/{invoiceId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
